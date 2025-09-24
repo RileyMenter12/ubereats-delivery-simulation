@@ -1,0 +1,110 @@
+---
+title: "Simulated Data for Manufacturing Precision Engine Pistons"
+author: "Riley Menter"
+date: "3/5/25"
+output: pdf_document
+---
+
+This markdown file Simulates UBER delivery data in Southern California. This simulation generates 50 deliveries total spanning 1-12 miles with varying delivery times. The sample sizes, average values, and standard deviations are estimated based on personal experiences as an UBER and Postmates delivery driver. 
+
+\section{Sample Size Breakdown}
+
+Since UBER delivery times vary based on distance, we need to create subgroups. 4 subgroups is sufficient enough to illustrate the variation in delivery times. For example, delivery distances between 1-3 miles will mostly span between 5-10 minutes while delivery distances between 6-8 miles will likely span 15-25 minutes.
+
+\section{Time of Day}
+
+The probabilities chosen for time of day are based on delivery patterns from personal experience. Since deliveries are slow in the mornings, every delivery distance group has a probability of 0.05 for morning deliveries. Afternoon deliveries are commonly short distance (1-5 miles) as people who are working and taking their lunch breaks order food from nearby restaurants. Longer distance deliveries (6+ miles) often occur in the evening and mostly late in the day as families are likely settled down at home for dinner and want to avoid driving long distances or dealing with potential traffic.
+
+\section{Weather}
+
+Given that this data is simulated with respect to deliveries in Southern California, the weather is pretty consistent. For this reason, the probabilities of each type of weather is set the same for all delivery distances simulation groups with 0.6 clear, 0.2 cloudy, 0.15 rainy, and 0.05 foggy.
+
+
+\section{Traffic}
+
+To keep things simple, the traffic variable is binary (bad and normal). It's a common trend for deliveries to pick up when volume traffic is high, especially in the afternoon and evening. Since the afternoon and evening correspond with delivery distances between 1 and 7, The probability of heavy traffic for the middle two simulation groups are set between 0.6-0.7. Towards the end of day, however, traffic lessens which means it doesn't influence delivery times as much. For this reason, the last simulation group (longest distance corresponding to night) has a probability of bad traffic set to 0.4.
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# For consistency
+set.seed(42)
+
+# Sample sizes
+n1 <- 20
+n2 <- 20
+n3 <- 5
+n4 <- 5
+
+# Categorical variables
+time_of_day_levels <- c("Morning", "Afternoon", "Evening", "Night")
+weather_levels <- c("Clear", "Cloudy", "Rainy", "Foggy")  # Different probabilities
+traffic_levels <- c("Normal", "Bad")
+
+# Function for generating categorical variables
+generate_categorical <- function(n, levels, probs = NULL) {
+  sample(levels, size = n, replace = TRUE, prob = probs)
+}
+
+# Simulate first 1/4 delivery data (1-3 miles)
+delivery_data1 <- data.frame(
+  Observations = 1:n1,
+  Time_of_Day = generate_categorical(n1, time_of_day_levels, probs = c(0.05, 0.5, 0.3, 0.15)),
+  Distance = runif(n1, min = 1, max = 3), # in miles
+  Time = runif(n1, min = 5, max = 15), # in minutes
+  Weather = generate_categorical(n1, weather_levels, probs = c(0.6, 0.2, 0.15, 0.05)), # Weather mostly clear
+  Traffic = generate_categorical(n1, traffic_levels, probs = c(0.3, 0.7))  # Usually bad traffic
+)
+
+# Simulate second 1/4 delivery data (4-6 miles)
+delivery_data2 <- data.frame(
+  Observations = (n1 + 1):(n1 + n2),
+  Time_of_Day = generate_categorical(n2, time_of_day_levels, probs = c(0.05, 0.25, 0.35, 0.35)),
+  Distance = runif(n2, min = 4, max = 6),
+  Time = runif(n2, min = 10, max = 20),
+  Weather = generate_categorical(n2, weather_levels, probs = c(0.6, 0.2, 0.15, 0.05)),  
+  Traffic = generate_categorical(n2, traffic_levels, probs = c(0.4, 0.6))
+)
+
+# Simulate third 1/4 delivery data (6-8 miles)
+delivery_data3 <- data.frame(
+  Observations = (n1 + n2 + 1):(n1 + n2 + n3),
+  Time_of_Day = generate_categorical(n3, time_of_day_levels, probs = c(0.05, 0.15, 0.35, 0.45)),
+  Distance = runif(n3, min = 6, max = 8),
+  Time = runif(n3, min = 15, max = 25),
+  Weather = generate_categorical(n3, weather_levels, probs = c(0.6, 0.2, 0.15, 0.05)),  
+  Traffic = generate_categorical(n3, traffic_levels, probs = c(0.5, 0.5)) # Mix of both
+)
+
+# Simulate fourth 1/4 delivery data (8-12 miles)
+delivery_data4 <- data.frame(
+  Observations = (n1 + n2 + n3 + 1):(n1 + n2 + n3 + n4),
+  Time_of_Day = generate_categorical(n4, time_of_day_levels, probs = c(0.05, 0.05, 0.25, 0.65)),
+  Distance = runif(n4, min = 8, max = 12),
+  Time = runif(n4, min = 17.5, max = 35),
+  Weather = generate_categorical(n4, weather_levels, probs = c(0.6, 0.2, 0.15, 0.05)),  
+  Traffic = generate_categorical(n4, traffic_levels, probs = c(0.6, 0.4)) # Distance rather than traffic
+)
+```
+
+Merge the 4 simulated parts into 1 dataset:
+
+```{r}
+delivery_data <- bind_rows(delivery_data1, delivery_data2, delivery_data3, delivery_data4)
+delivery_data
+```
+
+Create a CSV:
+
+```{r}
+write.csv(delivery_data, "simulated_uber_delivery.csv", row.names = FALSE)
+```
+
+Additional:
+
+```{r}
+summary(delivery_data)
+```
+
